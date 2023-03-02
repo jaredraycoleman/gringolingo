@@ -6,7 +6,12 @@ import tiktoken
 
 thisdir = pathlib.Path(__file__).parent.absolute()
 
-openai.api_key = thisdir.joinpath('api_key.txt').read_text().strip()
+api_key_path = pathlib.Path.home().joinpath('.gringolingo', 'api_key.txt')
+try:
+    openai.api_key = api_key_path.read_text().strip()
+except FileNotFoundError:
+    print("Could not find API key. Please create a file at {}".format(api_key_path))
+    exit(1)
 
 @lru_cache(maxsize=None)
 def load_prompt() -> str:
