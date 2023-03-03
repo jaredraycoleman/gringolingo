@@ -1,8 +1,10 @@
 from functools import lru_cache
+import random
 from typing import Any, Dict, List
 import openai
 import pathlib
 import tiktoken
+from .constants import TOPICS
 
 thisdir = pathlib.Path(__file__).parent.absolute()
 
@@ -34,9 +36,6 @@ def trim_conversation(conversation: List[Dict[str, str]], max_tokens: int) -> Li
 def main():
     prompt = load_prompt()
 
-    print(f"Prompt Tokens: {get_num_tokens(''.join(prompt))}")
-
-
     def new_conversation() -> List[Dict[str, str]]:
         welcome_message = " ".join([
             "Olá, meu nome é Gringo Lingo e eu vou ser seu tutor de inglês!",
@@ -48,11 +47,12 @@ def main():
         print(f"Gringo Lingo: {welcome_message}")
 
         # Get first question
+        topic = random.choice(TOPICS)
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages = [
                 {"role": "system", "content": prompt},
-                {"role": "user", "content": "Start with a conversation starter about a new topic."}
+                {"role": "user", "content": f"Start with a conversation starter about {topic}."}
             ]
         )
 
