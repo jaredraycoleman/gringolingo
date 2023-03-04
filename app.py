@@ -4,6 +4,7 @@ import json
 from heyoo import WhatsApp
 from os import environ
 from flask import Flask, request, make_response
+from bot import get_response
 
 
 messenger = WhatsApp(environ.get("TOKEN"), phone_number_id=environ.get("PHONE_NUMBER_ID")) #this should be writen as 
@@ -62,7 +63,9 @@ def hook():
                 message = messenger.get_message(data)
                 name = messenger.get_name(data)
                 logging.info("Message: %s", message)
-                messenger.send_message(f"Hi {name}, nice to connect with you", mobile)
+                response = get_response(mobile, message)
+                # messenger.send_message(f"Hi {name}, nice to connect with you", mobile)
+                messenger.send_message(response, mobile)
 
             elif message_type == "interactive":
                 message_response = messenger.get_interactive_response(data)
