@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, joinedload
 
 
-engine = create_engine("sqlite:///example.db", echo=True)
+engine = create_engine("sqlite:///example.db") #, echo=True)
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
@@ -92,11 +92,11 @@ class Message(Base):
             messages = (
                 session.query(Message)
                 .filter(Message.phone_id == phone_id)
-                .order_by(Message.timestamp.desc())
+                .order_by(Message.timestamp.asc())
                 .limit(n)
                 .all()
             )
-            return messages[::-1]
+            return messages
         
 # create tables if they don't exist
 Base.metadata.create_all(engine)
