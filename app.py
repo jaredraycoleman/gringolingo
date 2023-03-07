@@ -86,7 +86,7 @@ def messenger_hook():
         }
     ).json()
 
-    print(chat_history)
+    logging.info("Messenger: Chat history: %s", chat_history)
 
     return "ok"
 
