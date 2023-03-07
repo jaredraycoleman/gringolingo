@@ -1,17 +1,29 @@
 import logging
+import pathlib
+
+import requests
 from heyoo import WhatsApp
 from os import environ
 from flask import Flask, request, make_response
 from bot import get_response
 
+# load from .env file if it exists
+if pathlib.Path(".env").exists():
+    from dotenv import load_dotenv
+
+    load_dotenv()
 
 messenger = WhatsApp(environ.get("TOKEN"), phone_number_id=environ.get("PHONE_NUMBER_ID")) #this should be writen as 
 #WhatsApp(token = "inpust accesstoken", phone_number_id="input phone number id") #messages are not recieved without this pattern
 
-
 # Here's an article on how to get the application secret from Facebook developers portal.
 # https://support.appmachine.com/support/solutions/articles/80000978442
 VERIFY_TOKEN = environ.get("APP_SECRET") #application secret here
+MESSENGER_API_KEY = environ.get("MESSENGER_API_KEY") #messenger api key here
+MESSENGER_PAGE_ID = "109100192122534" # environ.get("MESSENGER_PAGE_ID") #messenger page id here
+
+MESSENGER_CONVERSATION_PATH = MESSENGER_PAGE_ID + "/?fields=conversations{participants,id,messages{message}}"
+
 
 #to be tested in prod environment
 # messenger = WhatsApp(os.getenv("heroku whatsapp token"),phone_number_id='105582068896304')
@@ -48,6 +60,33 @@ def messenger_hook():
     # Handle Webhook Subscriptions
     data = request.get_json()
     logging.info("Received webhook data: %s", data)
+
+    sender_id = None
+    for entry in data["entry"]:
+        for message in entry["messaging"]:
+            if "message" in message:
+                if message["sender"]["id"] != MESSENGER_PAGE_ID:
+                    sender_id = message["sender"]["id"]
+                    break
+                elif message["recipient"]["id"] != MESSENGER_PAGE_ID:
+                    sender_id = message["recipient"]["id"]
+                    break
+
+    if sender_id is None:
+        logging.error("Messenger: No sender id found")
+        return "ok"
+
+    # get chat history
+    chat_history = requests.get(
+        "https://graph.facebook.com/v16.0/", 
+        params={
+            "access_token": MESSENGER_API_KEY,
+            "fields": "conversations{participants,id,messages{message}}",
+            "user_id": sender_id
+        }
+    ).json()
+
+    print(chat_history)
 
     return "ok"
 
