@@ -1,6 +1,4 @@
-import os
 import logging
-import json
 from heyoo import WhatsApp
 from os import environ
 from flask import Flask, request, make_response
@@ -59,12 +57,13 @@ def hook():
             logging.info(
                 f"New Message; sender:{mobile} name:{name} type:{message_type}"
             )
+
+            messenger.mark_as_read(messenger.get_message_id(data))
             if message_type == "text":
                 message = messenger.get_message(data)
                 name = messenger.get_name(data)
                 logging.info("Message: %s", message)
                 response = get_response(mobile, message)
-                # messenger.send_message(f"Hi {name}, nice to connect with you", mobile)
                 messenger.send_message(response, mobile)
 
             elif message_type == "interactive":

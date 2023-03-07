@@ -2,7 +2,7 @@ from datetime import datetime
 from functools import lru_cache
 import os
 import random
-from typing import Any, Dict, List
+from typing import Dict, List
 import openai
 import pathlib
 import tiktoken
@@ -11,15 +11,29 @@ from topics import TOPICS
 from db import Message, MessageType
 
 thisdir = pathlib.Path(__file__).resolve().parent
-openai.api_key = os.environ["OPENAI_API_KEY"]
+# get from .env file if it exists
+if thisdir.joinpath('.env').exists():
+    from dotenv import load_dotenv
+    load_dotenv()
+
+if "OPENAI_API_KEY" in os.environ:
+    openai.api_key = os.environ["OPENAI_API_KEY"]
+
+# if no API KEY, raise error
+if not openai.api_key:
+    raise ValueError("No OpenAI API Key found. Please set the OPENAI_API_KEY environment variable.")
 
 # enumeration for supported languages
 
 LEARNING_MODE = "English"
+DIFFICULTY = "beginner"
 
 STARTER_PROMPT = " ".join([
     f"Be my {LEARNING_MODE} Tutor.", 
-    f"Converse with me in {LEARNING_MODE} and correct my {LEARNING_MODE} when I make mistakes."
+    f"Converse with me in {LEARNING_MODE}.",
+    f"Whenever I make spelling or grammar mistakes, correct me and then continue the conversation.",
+    f"Only correct me if I make a mistake.",
+    f"Use {DIFFICULTY} {LEARNING_MODE} vocabulary and grammar only.",
 ])
 
 WELCOME_MESSAGES = {
@@ -42,7 +56,8 @@ def get_starter() -> str:
 
     CONVERSATION_STARTER_PROMPT = " ".join([
         f"Generate a conversation starter in {LEARNING_MODE} about {topic}.",
-        f"Don't include quotation marks or context, only respond with the conversation starter."
+        f"Do not wrap in quotation marks or include context.",
+        f"Only respond with the conversation starter."
     ])
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -64,7 +79,6 @@ def get_num_tokens(text: str) -> int:
 
 def trim_conversation(conversation: List[Dict[str, str]], max_tokens: int) -> List[str]:
     """Trims a conversation to a maximum number of tokens. Keeping the most recent messages."""
-    encoding = tiktoken.get_encoding('gpt2')
     num_tokens = 0
     return_conversation = []
     for message in conversation[::-1]:
@@ -76,8 +90,6 @@ def trim_conversation(conversation: List[Dict[str, str]], max_tokens: int) -> Li
 
 def get_response(phone_id: str, new_message: str):
     messages = Message.get_last_n_messages(phone_id, 100)
-
-    print("Last 100 messages:", " --- ".join([m.content for m in messages]), "\n")
 
     # format messages for openai
     openai_messages = []
@@ -103,10 +115,9 @@ def get_response(phone_id: str, new_message: str):
     
     Message.add_message(phone_id, new_message, MessageType.user_message, timestamp=datetime.now())
 
-    reminder = f"(Remember to correct my mistakes if I made any, then continue the conversation using beginners {LEARNING_MODE})"
+    reminder = "" # f"(Remember to correct my mistakes if I made any, then continue the conversation using beginners {LEARNING_MODE})"
     openai_messages.append({"role": "user", "content": f"{new_message}\n\n{reminder}"})
 
-    print(trim_conversation(openai_messages, 3000))
     # get response from openai
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -123,12 +134,9 @@ def get_response(phone_id: str, new_message: str):
     return bot_message["content"]
 
 def cli():
-    # don't print sqlalchemy logs
-
     phone_id = "123456789"
     user_message = "/reset"
     while True:
-        print("My message:", user_message)
         bot_message = get_response(phone_id, user_message)
         print("GringoLingo:", bot_message) 
         user_message = input("You: ")
