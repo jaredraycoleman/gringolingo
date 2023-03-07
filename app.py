@@ -23,7 +23,7 @@ VERIFY_TOKEN = environ.get("APP_SECRET") #application secret here
 MESSENGER_API_KEY = environ.get("MESSENGER_API_KEY") #messenger api key here
 MESSENGER_PAGE_ID = "109100192122534" # environ.get("MESSENGER_PAGE_ID") #messenger page id here
 
-MESSENGER_CONVERSATION_PATH = MESSENGER_PAGE_ID + "/?fields=conversations{participants,id,messages{message}}"
+MESSENGER_CONVERSATION_PATH = MESSENGER_PAGE_ID + "/?fields=conversations{participants,id,messages{message,from}}"
 
 
 #to be tested in prod environment
