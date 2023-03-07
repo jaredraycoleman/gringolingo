@@ -43,91 +43,91 @@ def index():
     return "Hello, It Works"
 
 
-@app.route("/messenger", methods=["GET", "POST"])
-def messenger_hook():
-    # hook for facebook messenger
-    if request.method == "GET":
-        if request.args.get("hub.verify_token") == MESSENGER_VERIFY_TOKEN:
-            logging.info("Verified webhook")
-            response = make_response(request.args.get("hub.challenge"), 200)
-            response.mimetype = "text/plain"
-            return response
-        logging.error("Webhook Verification failed")
-        return "Invalid verification token"
+# @app.route("/messenger", methods=["GET", "POST"])
+# def messenger_hook():
+#     # hook for facebook messenger
+#     if request.method == "GET":
+#         if request.args.get("hub.verify_token") == MESSENGER_VERIFY_TOKEN:
+#             logging.info("Verified webhook")
+#             response = make_response(request.args.get("hub.challenge"), 200)
+#             response.mimetype = "text/plain"
+#             return response
+#         logging.error("Webhook Verification failed")
+#         return "Invalid verification token"
     
-    # Handle Webhook Subscriptions
-    data = request.get_json()
-    logging.info("Received webhook data: %s", data)
+#     # Handle Webhook Subscriptions
+#     data = request.get_json()
+#     logging.info("Received webhook data: %s", data)
 
-    sender_id = None
-    for entry in data["entry"]:
-        for message in entry["messaging"]:
-            if "message" in message:
-                if message["sender"]["id"] != MESSENGER_PAGE_ID:
-                    sender_id = message["sender"]["id"]
-                    break
-                elif message["recipient"]["id"] != MESSENGER_PAGE_ID:
-                    sender_id = message["recipient"]["id"]
-                    break
+#     sender_id = None
+#     for entry in data["entry"]:
+#         for message in entry["messaging"]:
+#             if "message" in message:
+#                 if message["sender"]["id"] != MESSENGER_PAGE_ID:
+#                     sender_id = message["sender"]["id"]
+#                     break
+#                 elif message["recipient"]["id"] != MESSENGER_PAGE_ID:
+#                     sender_id = message["recipient"]["id"]
+#                     break
 
-    if sender_id is None:
-        logging.error("Messenger: No sender id found")
-        return "ok"
+#     if sender_id is None:
+#         logging.error("Messenger: No sender id found")
+#         return "ok"
 
-    # get chat history
-    res = requests.get(
-        f"https://graph.facebook.com/v16.0/{MESSENGER_PAGE_ID}", 
-        params={
-            "access_token": MESSENGER_API_KEY,
-            "fields": "conversations{participants,id,messages{message,from}}",
-            "user_id": sender_id
-        }
-    )
+#     # get chat history
+#     res = requests.get(
+#         f"https://graph.facebook.com/v16.0/{MESSENGER_PAGE_ID}", 
+#         params={
+#             "access_token": MESSENGER_API_KEY,
+#             "fields": "conversations{participants,id,messages{message,from}}",
+#             "user_id": sender_id
+#         }
+#     )
 
-    logging.info(f"Made request to {res.url}")
-    chat_history = res.json()
-    logging.info("Messenger: Chat history: %s", chat_history)
+#     logging.info(f"Made request to {res.url}")
+#     chat_history = res.json()
+#     logging.info("Messenger: Chat history: %s", chat_history)
 
-    try:
-        conversation = chat_history["conversations"]["data"][0]
-    except IndexError:
-        logging.error("Messenger: No conversation found")
-        return "ok"
+#     try:
+#         conversation = chat_history["conversations"]["data"][0]
+#     except IndexError:
+#         logging.error("Messenger: No conversation found")
+#         return "ok"
     
-    openai_messages = []
-    for message in conversation["messages"]["data"][::-1]:
-        if "message" in message:
-            if message["message"] == "/reset":
-                break
-            role = "user" if message["from"]["id"] == sender_id else "assistant"
-            openai_messages.insert(0, {"role": role, "content": message["message"]})
+#     openai_messages = []
+#     for message in conversation["messages"]["data"][::-1]:
+#         if "message" in message:
+#             if message["message"] == "/reset":
+#                 break
+#             role = "user" if message["from"]["id"] == sender_id else "assistant"
+#             openai_messages.insert(0, {"role": role, "content": message["message"]})
 
-    if len(openai_messages) == 0:
-        bot_message = get_starter()
-    else:
-        # get response from openai
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages = [
-                {"role": "system", "content": STARTER_PROMPT},
-                *trim_conversation(openai_messages, 3000)
-            ]
-        )
-        bot_message = response.choices[0]["message"]["content"]
+#     if len(openai_messages) == 0:
+#         bot_message = get_starter()
+#     else:
+#         # get response from openai
+#         response = openai.ChatCompletion.create(
+#             model="gpt-3.5-turbo",
+#             messages = [
+#                 {"role": "system", "content": STARTER_PROMPT},
+#                 *trim_conversation(openai_messages, 3000)
+#             ]
+#         )
+#         bot_message = response.choices[0]["message"]["content"]
 
-    # send message to facebook
-    res = requests.post(
-        f"https://graph.facebook.com/v16.0/{MESSENGER_PAGE_ID}/messages",
-        params={
-            "access_token": MESSENGER_API_KEY
-        },
-        json={
-            "recipient": {"id": sender_id},
-            "message": {"text": bot_message}
-        }
-    )
+#     # send message to facebook
+#     res = requests.post(
+#         f"https://graph.facebook.com/v16.0/{MESSENGER_PAGE_ID}/messages",
+#         params={
+#             "access_token": MESSENGER_API_KEY
+#         },
+#         json={
+#             "recipient": {"id": sender_id},
+#             "message": {"text": bot_message}
+#         }
+#     )
 
-    return "ok"
+#     return "ok"
 
 @app.route("/whatsapi", methods=["GET", "POST"])
 def hook():
