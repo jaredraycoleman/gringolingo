@@ -17,6 +17,7 @@ VERIFY_TOKEN = environ.get("APP_SECRET") #application secret here
 # messenger = WhatsApp(os.getenv("heroku whatsapp token"),phone_number_id='105582068896304')
 # VERIFY_TOKEN = "heroku whatsapp token"
 
+MESSENGER_VERIFY_TOKEN = "strawberry ice cream"
 
 # Logging
 logging.basicConfig(
@@ -32,6 +33,21 @@ def index():
     return "Hello, It Works"
 
 
+@app.route("/messenger", methods=["GET", "POST"])
+def messenger_hook():
+    # hook for facebook messenger
+    if request.method == "GET":
+        if request.args.get("hub.verify_token") == MESSENGER_VERIFY_TOKEN:
+            logging.info("Verified webhook")
+            response = make_response(request.args.get("hub.challenge"), 200)
+            response.mimetype = "text/plain"
+            return response
+        logging.error("Webhook Verification failed")
+        return "Invalid verification token"
+    
+    # Handle Webhook Subscriptions
+    data = request.get_json()
+    logging.info("Received webhook data: %s", data)
 
 @app.route("/whatsapi", methods=["GET", "POST"])
 def hook():
