@@ -23,9 +23,6 @@ VERIFY_TOKEN = environ.get("APP_SECRET") #application secret here
 MESSENGER_API_KEY = environ.get("MESSENGER_API_KEY") #messenger api key here
 MESSENGER_PAGE_ID = "109100192122534" # environ.get("MESSENGER_PAGE_ID") #messenger page id here
 
-MESSENGER_CONVERSATION_PATH = MESSENGER_PAGE_ID + "/?fields=conversations{participants,id,messages{message,from}}"
-
-
 #to be tested in prod environment
 # messenger = WhatsApp(os.getenv("heroku whatsapp token"),phone_number_id='105582068896304')
 # VERIFY_TOKEN = "heroku whatsapp token"
@@ -82,7 +79,7 @@ def messenger_hook():
         f"https://graph.facebook.com/v16.0/{MESSENGER_PAGE_ID}", 
         params={
             "access_token": MESSENGER_API_KEY,
-            "fields": "conversations{participants,id,messages{message}}",
+            "fields": "conversations{participants,id,messages{message,from}}",
             "user_id": sender_id
         }
     )
