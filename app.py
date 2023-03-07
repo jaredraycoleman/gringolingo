@@ -1,11 +1,12 @@
 import logging
 import pathlib
+import openai
 
 import requests
 from heyoo import WhatsApp
 from os import environ
 from flask import Flask, request, make_response
-from bot import get_response
+from bot import STARTER_PROMPT, get_response, get_starter, trim_conversation
 
 # load from .env file if it exists
 if pathlib.Path(".env").exists():
@@ -89,6 +90,45 @@ def messenger_hook():
     logging.info(f"Made request to {res.url}")
     chat_history = res.json()
     logging.info("Messenger: Chat history: %s", chat_history)
+
+    try:
+        conversation = chat_history["conversations"]["data"][0]
+    except IndexError:
+        logging.error("Messenger: No conversation found")
+        return "ok"
+    
+    openai_messages = []
+    for message in conversation["messages"]["data"]:
+        if "message" in message[::-1]:
+            if message["message"] == "/reset":
+                break
+            role = "user" if message["from"]["id"] == sender_id else "assistant"
+            openai_messages.insert(0, {"role": role, "content": message["message"]})
+
+    if len(openai_messages) == 0:
+        bot_message = get_starter()
+    else:
+        # get response from openai
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages = [
+                {"role": "system", "content": STARTER_PROMPT},
+                *trim_conversation(openai_messages, 3000)
+            ]
+        )
+        bot_message = response.choices[0]["message"]["content"]
+
+    # send message to facebook
+    res = requests.post(
+        f"https://graph.facebook.com/v16.0/{MESSENGER_PAGE_ID}/messages",
+        params={
+            "access_token": MESSENGER_API_KEY
+        },
+        json={
+            "recipient": {"id": sender_id},
+            "message": {"text": bot_message}
+        }
+    )
 
     return "ok"
 
