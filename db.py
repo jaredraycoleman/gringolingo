@@ -99,4 +99,11 @@ class Message(Base):
             return messages
         
 # create tables if they don't exist
-Base.metadata.create_all(engine)
+try:
+    Base.metadata.create_all(engine)
+except:
+    # delete database and try again
+    import os
+    print("Deleting database and trying again")
+    os.remove("example.db")
+    Base.metadata.create_all(engine)
