@@ -49,6 +49,8 @@ def messenger_hook():
     data = request.get_json()
     logging.info("Received webhook data: %s", data)
 
+    return "ok"
+
 @app.route("/whatsapi", methods=["GET", "POST"])
 def hook():
     if request.method == "GET":
