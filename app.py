@@ -77,16 +77,17 @@ def messenger_hook():
         return "ok"
 
     # get chat history
-    chat_history = requests.get(
+    res = requests.get(
         f"https://graph.facebook.com/v16.0/{MESSENGER_PAGE_ID}", 
         params={
             "access_token": MESSENGER_API_KEY,
             "fields": "conversations{participants,id,messages{message}}",
             "user_id": sender_id
         }
-    ).json()
+    )
 
-    logging.info(f"Made request to {chat_history.url}")
+    logging.info(f"Made request to {res.url}")
+    chat_history = res.json()
     logging.info("Messenger: Chat history: %s", chat_history)
 
     return "ok"
