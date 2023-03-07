@@ -98,8 +98,8 @@ def messenger_hook():
         return "ok"
     
     openai_messages = []
-    for message in conversation["messages"]["data"]:
-        if "message" in message[::-1]:
+    for message in conversation["messages"]["data"][::-1]:
+        if "message" in message:
             if message["message"] == "/reset":
                 break
             role = "user" if message["from"]["id"] == sender_id else "assistant"
