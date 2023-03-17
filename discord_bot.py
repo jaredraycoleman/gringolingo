@@ -39,7 +39,7 @@ difficulties = {
 }
 
 class DiscordLanguageBot(LanguageBot):
-    def __init__(self, user:str) -> None:
+    def __init__(self, user: str) -> None:
         try:
             USER_STATE.setdefault(user, {})
             target_language = USER_STATE[user]["mode"].lower().strip()
@@ -207,6 +207,10 @@ async def on_message(message: Message):
     logging.info(f"on_private: {on_private}, on_mention: {on_mention}")
     if not on_private and not on_mention:
         return
+    
+    # strip mention from message
+    if on_mention:
+        message.content = message.content.replace(f"<@{bot.user.id}>", "").strip()
     
     # if is command, don't ask for response
     if not message.content.startswith('!'):

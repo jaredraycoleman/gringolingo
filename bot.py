@@ -16,6 +16,8 @@ if thisdir.joinpath('.env').exists():
 if "OPENAI_API_KEY" in os.environ:
     openai.api_key = os.environ["OPENAI_API_KEY"]
 
+MODEL = "gpt-4" # gpt-4 or gpt-3.5-turbo
+
 # if no API KEY, raise error
 if not openai.api_key:
     raise ValueError("No OpenAI API Key found. Please set the OPENAI_API_KEY environment variable.")
@@ -41,7 +43,7 @@ class LanguageBot:
             f"Only respond with the conversation starter."
         ])
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model=MODEL,
             messages = [
                 {"role": "system", "content": CONVERSATION_STARTER_PROMPT}
             ]
@@ -64,7 +66,7 @@ class LanguageBot:
                 "role": "system", 
                 "content": " ".join([
                     f"You are a {self.target_language} language tutor for a {self.source_language} speaker.",
-                    f"If there are English mistakes in the user messages, you *must* correct it.",
+                    f"If there are English mistakes in the user messages, you *must* correct them.",
                     f"Then continue the conversation using {self.difficulty}-level {self.target_language}.",
                     f"If there are no English mistakes, just continue the conversation.\n\n",
                 ])
@@ -74,13 +76,14 @@ class LanguageBot:
                 "role": "system", 
                 "content": " ".join([
                     f"If there are any {self.target_language} mistakes in the user's response, you *must* correct them, then continue the conversation using {self.difficulty}-level {self.target_language}.",
+                    f"Put corrections in quotation marks, like this: \"I am a student\"", 
                     f"If there are no {self.target_language} mistakes, just continue the conversation.\n\n",
                 ])
             }
         ]
         logging.info(f"all_messages: {all_messages}")
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model=MODEL,
             messages=all_messages
         )
 
