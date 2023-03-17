@@ -204,6 +204,16 @@ async def on_message(message: Message):
     # only work on DM channels or if mentioned
     on_private = message.channel.type == discord.ChannelType.private
     on_mention = bot.user.mentioned_in(message)
+    if not on_private and on_mention:
+        # send a DM to the user, saying that they should use DMs
+        # Also send a message in the channel that only the user can see, saying that they should use DMs
+        await message.author.send("Please use DMs to talk to me. Por favor, use os DMs para conversar comigo.")
+        await message.channel.send(
+            "I only respond to DMs, I sent you a DM with more info. Eu só respondo em DMs, eu te mandei uma DM com mais informações.", 
+            delete_after=60, reference=message, mention_author=True
+        )
+        return 
+
     logging.info(f"on_private: {on_private}, on_mention: {on_mention}")
     if not on_private and not on_mention:
         return
